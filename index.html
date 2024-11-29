@@ -1,0 +1,180 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>タブ付きリーダー</title>
+    <style>
+        body {
+            display: flex;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        /* 縦型タブ */
+        .sidebar {
+            width: 200px;
+            background-color: #f4f4f4;
+            border-right: 1px solid #ccc;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar button {
+            padding: 10px;
+            text-align: left;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .sidebar button:hover {
+            background-color: #ddd;
+        }
+        /* コンテンツエリア */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        /* 上側タブ */
+        .top-tabs {
+            display: flex;
+            background-color: #f4f4f4;
+            border-bottom: 1px solid #ccc;
+        }
+        .top-tabs button {
+            padding: 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .top-tabs button:hover {
+            background-color: #ddd;
+        }
+        /* コンテンツ表示エリア */
+        .content-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        /* ナビゲーションボタン */
+        .nav-buttons {
+            text-align: right;
+            padding: 10px;
+            border-top: 1px solid #ccc;
+        }
+        .nav-buttons button {
+            padding: 10px 20px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 縦型タブ -->
+    <div class="sidebar">
+        <button onclick="loadFile('file1.html')">ファイル1</button>
+        <button onclick="loadFile('file2.html')">ファイル2</button>
+        <button onclick="loadFile('file3.html')">ファイル3</button>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <div class="content">
+        <!-- 上側タブ -->
+        <div class="top-tabs" id="top-tabs">
+            <!-- 読み込んだファイルのタグに応じて生成 -->
+        </div>
+
+        <!-- コンテンツエリア -->
+        <div class="content-area" id="content-area"></div>
+
+        <!-- ナビゲーションボタン -->
+        <div class="nav-buttons">
+            <button id="prev-button" onclick="prevPage()">戻る</button>
+            <button id="next-button" onclick="nextPage()">次へ</button>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 0;
+        let pages = [];
+
+        // ファイルを読み込む
+        function loadFile(file) {
+            fetch(file)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('content-area').innerHTML = html;
+                    setupTopTabs(html);
+                    paginateContent();
+                });
+        }
+
+        // 上側タブをセットアップ
+        function setupTopTabs(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const headings = doc.querySelectorAll('h1, h2'); // 見出しを対象
+            const topTabs = document.getElementById('top-tabs');
+            topTabs.innerHTML = '';
+
+            headings.forEach((heading, index) => {
+                const button = document.createElement('button');
+                button.textContent = heading.textContent;
+                button.onclick = () => {
+                    const element = document.getElementById(`heading-${index}`);
+                    if (element) element.scrollIntoView({ behavior: 'smooth' });
+                };
+                topTabs.appendChild(button);
+                heading.id = `heading-${index}`;
+            });
+        }
+
+        // コンテンツをページ分割
+        function paginateContent() {
+            const content = document.getElementById('content-area');
+            const contentText = content.innerHTML;
+            const maxLength = 1000; // ページの最大文字数
+            pages = [];
+
+            let currentPageContent = '';
+            content.innerHTML = ''; // 初期化
+
+            for (const char of contentText) {
+                currentPageContent += char;
+                if (currentPageContent.length >= maxLength) {
+                    pages.push(currentPageContent);
+                    currentPageContent = '';
+                }
+            }
+
+            if (currentPageContent) {
+                pages.push(currentPageContent);
+            }
+
+            showPage(0);
+        }
+
+        // ページを表示
+        function showPage(pageIndex) {
+            const content = document.getElementById('content-area');
+            if (pageIndex >= 0 && pageIndex < pages.length) {
+                currentPage = pageIndex;
+                content.innerHTML = pages[pageIndex];
+            }
+        }
+
+        // 次のページ
+        function nextPage() {
+            if (currentPage < pages.length - 1) {
+                showPage(currentPage + 1);
+            }
+        }
+
+        // 前のページ
+        function prevPage() {
+            if (currentPage > 0) {
+                showPage(currentPage - 1);
+            }
+        }
+    </script>
+</body>
+</html>
